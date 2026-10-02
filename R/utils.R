@@ -122,6 +122,56 @@ download_and_process_oisst <- function(
   }
 }
 
+process_oisst <- function(years, out_dir, varname, input) {
+  # Create the target directory if it doesn't exist.
+  dir.create(
+    here::here(out_dir),
+    recursive = TRUE,
+    showWarnings = FALSE
+  )
+
+  for (i in years) {
+    grd_filename <- here::here(
+      out_dir,
+      paste0("test_", i, ".grd")
+    )
+    rds_filename <- here::here(
+      out_dir,
+      paste0("sst", i, ".rds")
+    )
+
+    # Step 1: get NetCDF from network drive and process to a raster file.
+    if (!file.exists(grd_filename)) {
+      message(paste("Accessing and processing data for year:", i))
+
+      temp_raster <- nc_to_raster(nc = input, varname = varname)
+      raster::writeRaster(
+        temp_raster,
+        filename = grd_filename,
+        overwrite = TRUE
+      )
+      message(paste("Finished processing and saving raster for", i))
+    } else {
+      message(paste("Raster file for", i, "already exists. Skipping download."))
+    }
+
+    # Step 2: Convert the raster to a tidy data frame and save as an RDS file.
+    if (file.exists(grd_filename) && !file.exists(rds_filename)) {
+      message(paste("Converting raster to data frame for year:", i))
+      temp_raster <- raster::brick(grd_filename)
+      sst_df <- raster_to_sstdf(brick = temp_raster)
+      saveRDS(sst_df, rds_filename)
+      message(paste("Converted raster to data frame and saved RDS for", i))
+    } else {
+      message(paste(
+        "RDS file for",
+        i,
+        "already exists or raster not found. Skipping conversion."
+      ))
+    }
+  }
+}
+
 #' Convert NetCDF Data to a Cropped RasterBrick
 #'
 #' Reads a specified variable from a NetCDF file, converts it into a
