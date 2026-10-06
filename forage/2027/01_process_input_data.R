@@ -40,6 +40,11 @@ NEAMAPblueprey_csv <- read.csv(here::here(
   "forage/static/Full Prey List_Common Names.csv"
 ))
 
+# Read in NEAMAP updated input from Jim Gartland, reformat with same names
+neamap_bluepreyagg_stn <- process_neamap_data(
+  "shared_data/2027/NEAMAP_Mean stomach weights_Bluefish Prey_Aug2026.csv"
+)
+
 # Analyses ----
 
 ## Update prey list ----
@@ -176,6 +181,7 @@ bluepyall_stn <- survey_predator_prey |>
       TRUE ~ as.character(NA)
     )
   ) |>
+  ## TODO: can probably get rid of this select call
   dplyr::select(
     year,
     month,
@@ -208,55 +214,7 @@ bluepyall_stn <- survey_predator_prey |>
     bluepynam = case_when(blueprey == "blueprey" ~ pynam, TRUE ~ NA_character_)
   )
 
-# Now get station data in one line
-stndat <- bluepyall_stn |>
-  dplyr::select(
-    year,
-    season_ng,
-    id,
-    beglat,
-    beglon,
-    declat,
-    declon,
-    bottemp,
-    surftemp,
-    setdepth
-  ) |>
-  distinct()
-
-#pisc stomachs in tow count pdid for each pred and sum
-piscstom <- bluepyall_stn |>
-  group_by(id, pdcomnam) |>
-  summarise(nstompd = n_distinct(pdid)) |>
-  group_by(id) |>
-  summarise(nstomtot = sum(nstompd))
-
-bluepyall_stn |>
-  dplyr::filter(id == "197303_154") |>
-  dplyr::select(id, pdcomnam, pdid) |>
-  group_by(id, pdcomnam) |>
-  summarise(nstompd = n_distinct(pdid)) |>
-  group_by(id) |>
-  summarise(nstomtot = sum(nstompd))
-
-#mean and var pred length per tow
-pisclen <- bluepyall_stn |>
-  summarise(meanpisclen = mean(pdlen), varpisclen = var(pdlen))
-
-# Aggregated prey at station level with predator covariates
-bluepyagg_stn <- bluepyall_stn |>
-  summarise(
-    sumbluepywt = sum(bluepywt),
-    nbluepysp = n_distinct(bluepynam, na.rm = T),
-    npreysp = n_distinct(pynam),
-    npiscsp = n_distinct(pdcomnam)
-  ) |>
-  left_join(piscstom) |>
-  mutate(meanbluepywt = sumbluepywt / nstomtot) |>
-  left_join(pisclen) |>
-  left_join(stndat)
-
-bluepyagg_stn2 <- bluepyall_stn |>
+nefsc_bluepyagg_stn <- bluepyall_stn |>
   group_by(id) |>
   summarise(
     year = first(year),
@@ -284,41 +242,8 @@ bluepyagg_stn2 <- bluepyall_stn |>
     vessel = ifelse(year < 2009, "AL", "HB")
   )
 
-colnames <- colnames(bluepyagg_stn)
-head(bluepyagg_stn) == head(bluepyagg_stn2 |> dplyr::select(colnames))
-
-## all values are either TRUE or NA (missing lengths)
-
-(bluepyagg_stn == (bluepyagg_stn2 |> dplyr::select(colnames))) |>
-  as.numeric() |>
-  sum(na.rm = TRUE)
-(bluepyagg_stn == (bluepyagg_stn2 |> dplyr::select(colnames))) |>
-  as.numeric() |>
-  length()
-(bluepyagg_stn == (bluepyagg_stn2 |> dplyr::select(colnames))) |>
-  as.numeric() |>
-  is.na() |>
-  sum()
-
-# current dataset, fix declon, add vessel, rename NEFSC
-#nefsc_bluepyagg_stn <- readRDS(here("fhdat/bluepyagg_stn.rds")) |>
-nefsc_bluepyagg_stn <- bluepyagg_stn |>
-  mutate(
-    declon = -declon,
-    vessel = case_when(
-      year < 2009 ~ "AL",
-      year >= 2009 ~ "HB",
-      TRUE ~ as.character(NA)
-    )
-  )
-
 ## Combine NEFSC and NEAMAP Datasets ----
 # This section reads in the NEAMAP data and combines it with the processed NEFSC data.
-
-# Read in NEAMAP updated input from Jim Gartland, reformat with same names
-neamap_bluepreyagg_stn <- process_neamap_data(
-  "shared_data/2027/NEAMAP_Mean stomach weights_Bluefish Prey_Aug2026.csv"
-)
 
 # combine NEAMAP and NEFSC
 bluepyagg_stn_all <- nefsc_bluepyagg_stn |>

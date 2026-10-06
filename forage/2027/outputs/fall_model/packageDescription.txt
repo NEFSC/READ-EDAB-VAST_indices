@@ -1,0 +1,44 @@
+Package: VAST
+Type: Package
+Title: Vector-Autoregressive Spatio-Temporal (VAST) Model
+Version: 4.0.0
+Date: 2025-02-07
+Authors@R: c(person(given = "James", family = "Thorson", role = c("aut", "cre"), email = "James.Thorson@noaa.gov", comment
+             = c(ORCID = "0000-0001-7415-1010")), person(given="Cole", family="Monnahan", role="ctb",
+             email="Cole.Monnahan@noaa.gov") )
+Description: VAST is an R package for conducting spatio-temporal analysis of data from multiple categories (species,
+             sizes, etc.), and includes both spatial and spatio-temporal variation in density for each category, with
+             either factor-analysis or autoregressive correlations among categories, with derived calculation of
+             abundance indices, center-of-gravity, and area-occupied.
+Imports: abind, effects, stats, utils, fmesher, remotes, devtools, alphahull, corpcor, corrplot, DHARMa, ecodist,
+             fastcluster, plotrix, RANN, sf, raster, reshape2, rnaturalearth, rnaturalearthdata, seriation, shape, sp,
+             viridisLite, spacetime, gstat, marginaleffects, methods, graphics,
+Depends: TMB (>= 1.8.0), R (>= 3.5.0), units, marginaleffects
+Enhances: tidyr,
+Suggests: INLA, testthat, knitr, rmarkdown, pscl, tweedie, mgcv, lme4,
+Additional_repositories: https://inla.r-inla-download.org/R/stable
+License: file LICENSE
+LazyData: true
+Encoding: UTF-8
+RoxygenNote: 7.3.2
+ByteCompile: true
+URL: http://github.com/James-Thorson-NOAA/VAST
+BugReports: http://github.com/James-Thorson-NOAA/VAST/issues
+VignetteBuilder: knitr
+RemoteType: github
+RemoteHost: api.github.com
+RemoteRepo: VAST
+RemoteUsername: james-thorson
+RemoteRef: main
+RemoteSha: a8dca4cd6d6fd2ae37d00fa12c60f2e962c8673e
+GithubRepo: VAST
+GithubUsername: james-thorson
+GithubRef: main
+GithubSHA1: a8dca4cd6d6fd2ae37d00fa12c60f2e962c8673e
+NeedsCompilation: no
+Packaged: 2025-09-08 15:26:09 UTC; abigail.tyrell
+Author: James Thorson [aut, cre] (ORCID: <https://orcid.org/0000-0001-7415-1010>), Cole Monnahan [ctb]
+Maintainer: James Thorson <James.Thorson@noaa.gov>
+Built: R 4.5.1; ; 2025-09-08 15:26:33 UTC; windows
+
+-- File: C:/Users/abigail.tyrell/AppData/Local/Programs/R/R-4.5.1/library/VAST/Meta/package.rds 

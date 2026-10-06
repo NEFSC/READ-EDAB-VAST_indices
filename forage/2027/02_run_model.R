@@ -297,3 +297,84 @@ SOEinputsCOG(
     ".rds"
   )
 )
+
+### plots ----
+
+#### abundance index ----
+plt_index <- function(season) {
+  data <- readRDS(paste0(
+    "forage/2027/outputs/",
+    season,
+    "forageindex_",
+    Sys.Date(),
+    ".rds"
+  ))
+
+  plt_data <- data |>
+    dplyr::mutate(source = "new") |>
+    dplyr::bind_rows(
+      ecodata::forage_index |>
+        dplyr::filter(
+          stringr::str_detect(Var, stringr::str_to_sentence(season)),
+          EPU != "ALLEPU"
+        ) |>
+        dplyr::mutate(source = "ecodata")
+    ) |>
+    dplyr::filter(!stringr::str_detect(Var, "SE$"))
+
+  plt <- plt_data |>
+    ggplot2::ggplot(ggplot2::aes(x = Time, y = Value, color = source)) +
+    ggplot2::geom_line() +
+    ggplot2::geom_point() +
+    ggplot2::facet_wrap(~EPU, scales = "free") +
+    ggplot2::theme_bw() +
+    ggplot2::ggtitle(paste(stringr::str_to_sentence(season), "Index")) +
+    ggplot2::theme(legend.position = "bottom")
+
+  return(plt)
+}
+
+plt_index("fall")
+plt_index("spring")
+
+
+#### center of gravity ----
+
+plt_cog <- function(season) {
+  data <- readRDS(paste0(
+    "forage/2027/outputs/",
+    season,
+    "foragecog_",
+    Sys.Date(),
+    ".rds"
+  ))
+
+  plt_data <- data |>
+    dplyr::mutate(source = "new") |>
+    dplyr::bind_rows(
+      ecodata::forage_index |>
+        dplyr::filter(
+          stringr::str_detect(Var, stringr::str_to_sentence(season)),
+          EPU == "ALLEPU"
+        ) |>
+        dplyr::mutate(source = "ecodata")
+    ) |>
+    dplyr::filter(!stringr::str_detect(Var, "SE$"))
+
+  plt <- plt_data |>
+    ggplot2::ggplot(ggplot2::aes(x = Time, y = Value, color = source)) +
+    ggplot2::geom_line() +
+    ggplot2::geom_point() +
+    ggplot2::facet_wrap(~Var, scales = "free") +
+    ggplot2::theme_bw() +
+    ggplot2::ggtitle(paste(
+      stringr::str_to_sentence(season),
+      "Center of Gravity"
+    )) +
+    ggplot2::theme(legend.position = "bottom")
+
+  return(plt)
+}
+
+plt_cog("fall")
+plt_cog("spring")
