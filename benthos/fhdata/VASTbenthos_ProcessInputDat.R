@@ -480,54 +480,161 @@ stations <- macrobenagg_stn_all %>%
 
 # 12/05/2025. Joe created a workflow to update GLORYS data. Reading in from there now -MTG
 # 
-BTdfs <- list.files(("~/EDAB_Datasets/GLORYS/glorys_bottomT/annual_bottomT_vast/"), pattern = "*.rds")
+# BTdfs <- list.files(("~/EDAB_Datasets/GLORYS/glorys_bottomT/annual_bottomT_vast/"), pattern = "*.rds")
+
+# 12/17/2025 Joe created sub folder V2 to fix an error with years 1993-2025
+# making sure the V2 files are used for those years
+
+# Base directories
+base_dir <- "~/EDAB_Datasets/GLORYS/glorys_bottomT/annual_bottomT_vast/"
+v1_dir <- file.path(base_dir, "V1")
+v2_dir   <- file.path(base_dir, "V2")
+
+# List files
+BTdfs_v1 <- list.files(v1_dir, pattern = "\\.rds$")
+BTdfs_v2   <- list.files(v2_dir, pattern = "\\.rds$")
+
+# Helper function to extract year from either filename style
+get_year <- function(x) {
+  as.numeric(sub(".*_(\\d{4})\\.rds$", "\\1", x))
+}
+
+# Extract years
+v1_years <- get_year(BTdfs_v1)
+v2_years   <- get_year(BTdfs_v2)
+
+# Keep original data only up to 1992
+BTdfs_keep_orig <- BTdfs_v1[v1_years <= 1992]
+
+# Use V2 data for 1993–2025
+BTdfs_use_v2 <- BTdfs_v2[v2_years >= 1993 & v2_years <= 2025]
+
+# Combine and sort by year
+BTdfs <- c(BTdfs_keep_orig, BTdfs_use_v2)
+BTdfs <- BTdfs[order(get_year(BTdfs))]
+
 
 dietstn_mod_bt <- tibble()
 
+# rewriting the for loop to use the V2 subfolder when needed
 
-for(df in BTdfs){
-  btdf <- readRDS(paste0("~/EDAB_Datasets/GLORYS/glorys_bottomT/annual_bottomT_vast/", df))
+
+for (df in BTdfs) {
   
-  if(unique(btdf$year) %in% unique(stations$year)){
-    # keep only bluefish dates in SST year
-    stationsyr <- stations %>%
-      filter(year == unique(btdf$year))
-    
-    # keep only modeled bt days in survey dataset
-    btdf_survdays <- btdf %>%
-      dplyr::mutate(numdate = as.numeric(date))%>%
-      dplyr::filter(numdate %in% unique(stationsyr$numdate)) %>%
-      dplyr::mutate(year = as.numeric(year),
-                    month = as.numeric(month),
-                    day = as.numeric(day),
-                    declon = longitude,
-                    declat = latitude) %>%
-      dplyr::select(-longitude, -latitude) %>%
-      sf::st_as_sf(coords=c("declon","declat"), crs=4326, remove=FALSE)
-    
-    # now join by nearest neighbor and date
-    
-    #https://stackoverflow.com/questions/71959927/spatial-join-two-data-frames-by-nearest-feature-and-date-in-r
-    
-    yrdietmodBT <- do.call('rbind', lapply(split(stationsyr, 1:nrow(stationsyr)), function(x) {
-      sf::st_join(x, btdf_survdays[btdf_survdays$numdate == unique(x$ numdate),],
-                  #join = st_nearest_feature
-                  join = st_nn, k = 1, progress = FALSE
+  yr <- get_year(df)
+  
+  # choose correct file location
+  btdf <- readRDS(
+    if (yr >= 1993 && yr <= 2024) {
+      file.path(v2_dir, df)
+    } else {
+      file.path(v1_dir, df)
+    }
+  )
+  
+  if (!yr %in% unique(stations$year)) next
+  
+  # keep only bluefish dates in SST year
+  stationsyr <- stations %>%
+    dplyr::filter(year == yr)
+  
+  if (nrow(stationsyr) == 0) next
+  
+  # keep only modeled bt days in survey dataset
+  btdf_survdays <- btdf %>%
+    dplyr::mutate(numdate = as.numeric(date)) %>%
+    dplyr::filter(numdate %in% stationsyr$numdate) %>%
+    dplyr::mutate(
+      year   = as.numeric(year),
+      month = as.numeric(month),
+      day   = as.numeric(day),
+      declon = longitude,
+      declat = latitude
+    ) %>%
+    dplyr::select(-longitude, -latitude) %>%
+    sf::st_as_sf(coords = c("declon", "declat"),
+                 crs = 4326, remove = FALSE)
+  
+  if (nrow(btdf_survdays) == 0) next
+  
+  yrdietmodBT <- do.call(
+    rbind,
+    lapply(split(stationsyr, seq_len(nrow(stationsyr))), function(x) {
+      
+      y <- btdf_survdays[btdf_survdays$numdate == unique(x$numdate), ]
+      if (nrow(y) == 0) return(NULL)
+      
+      sf::st_join(
+        x, y,
+        join = st_nn,
+        k = 1,
+        progress = FALSE
       )
-    }))
-    
-    #   #datatable solution--works but doesnt seem faster?
-    #    df1 <- data.table(stationsyr)
-    #
-    #  .nearest_samedate <- function(x) {
-    #    st_join(st_as_sf(x), sstdf_survdays[sstdf_survdays$yrmody == unique(x$yrmody),], join = st_nearest_feature)
-    #  }
-    # #
-    #  yrdietOISST <- df1[, .nearest_samedate(.SD), by = list(1:nrow(df1))]
-    
-    dietstn_mod_bt <- rbind(dietstn_mod_bt,  yrdietmodBT)
-  }
+    })
+  )
+  
+  dietstn_mod_bt <- rbind(dietstn_mod_bt, yrdietmodBT)
 }
+
+# old version below
+
+# for(df in BTdfs){
+#   btdf <- readRDS(paste0("~/EDAB_Datasets/GLORYS/glorys_bottomT/annual_bottomT_vast/", df))
+#   
+#   if(unique(btdf$year) %in% unique(stations$year)){
+#     # keep only bluefish dates in SST year
+#     stationsyr <- stations %>%
+#       filter(year == unique(btdf$year))
+#     
+#     # keep only modeled bt days in survey dataset
+#     btdf_survdays <- btdf %>%
+#       dplyr::mutate(numdate = as.numeric(date))%>%
+#       dplyr::filter(numdate %in% unique(stationsyr$numdate)) %>%
+#       dplyr::mutate(year = as.numeric(year),
+#                     month = as.numeric(month),
+#                     day = as.numeric(day),
+#                     declon = longitude,
+#                     declat = latitude) %>%
+#       dplyr::select(-longitude, -latitude) %>%
+#       sf::st_as_sf(coords=c("declon","declat"), crs=4326, remove=FALSE)
+#     
+#     # now join by nearest neighbor and date
+#     
+#     #https://stackoverflow.com/questions/71959927/spatial-join-two-data-frames-by-nearest-feature-and-date-in-r
+#     
+#     yrdietmodBT <- do.call(
+#       rbind,
+#       lapply(split(stationsyr, seq_len(nrow(stationsyr))), function(x) {
+#         
+#         y <- btdf_survdays[btdf_survdays$numdate == unique(x$numdate), ]
+#         
+#         if (nrow(y) == 0) {
+#           return(NULL)
+#         }
+#         
+#         sf::st_join(
+#           x,
+#           y,
+#           join = st_nn,
+#           k = 1,
+#           progress = FALSE
+#         )
+#       })
+#     )
+#     
+#     
+#     #   #datatable solution--works but doesnt seem faster?
+#     #    df1 <- data.table(stationsyr)
+#     #
+#     #  .nearest_samedate <- function(x) {
+#     #    st_join(st_as_sf(x), sstdf_survdays[sstdf_survdays$yrmody == unique(x$yrmody),], join = st_nearest_feature)
+#     #  }
+#     # #
+#     #  yrdietOISST <- df1[, .nearest_samedate(.SD), by = list(1:nrow(df1))]
+#     
+#     dietstn_mod_bt <- rbind(dietstn_mod_bt,  yrdietmodBT)
+#   }
+# }
 
 #saveRDS(dietstn_OISST, here("data-raw/dietstn_OISST.rds"))
 
@@ -567,54 +674,147 @@ stations <- megabenagg_stn_all %>%
 
 
 #list of SST dataframes
-BTdfs <- list.files(here("benthos/data-raw/bottomtemp/bt_data/"), pattern = "*.rds")
+# BTdfs <- list.files(here("benthos/data-raw/bottomtemp/bt_data/"), pattern = "*.rds")
+
+# 12/17/2025 Joe created sub folder V2 to fix an error with years 1993-2025
+# making sure the V2 files are used for those years
+
+# Base directories
+base_dir <- "~/EDAB_Datasets/GLORYS/glorys_bottomT/annual_bottomT_vast/"
+v1_dir <- file.path(base_dir, "V1")
+v2_dir   <- file.path(base_dir, "V2")
+
+# List files
+BTdfs_v1 <- list.files(v1_dir, pattern = "\\.rds$")
+BTdfs_v2   <- list.files(v2_dir, pattern = "\\.rds$")
+
+# Helper function to extract year from either filename style
+get_year <- function(x) {
+  as.numeric(sub(".*_(\\d{4})\\.rds$", "\\1", x))
+}
+
+# Extract years
+v1_years <- get_year(BTdfs_v1)
+v2_years   <- get_year(BTdfs_v2)
+
+# Keep original data only up to 1992
+BTdfs_keep_orig <- BTdfs_v1[v1_years <= 1992]
+
+# Use V2 data for 1993–2025
+BTdfs_use_v2 <- BTdfs_v2[v2_years >= 1993 & v2_years <= 2025]
+
+# Combine and sort by year
+BTdfs <- c(BTdfs_keep_orig, BTdfs_use_v2)
+BTdfs <- BTdfs[order(get_year(BTdfs))]
+
 
 dietstn_mod_bt <- tibble()
 
+# rewriting the for loop to use the V2 subfolder when needed
 
-for(df in BTdfs){
-  btdf <- readRDS(paste0(here("benthos/data-raw/bottomtemp/bt_data/", df)))
+
+for (df in BTdfs) {
   
-  if(unique(btdf$year) %in% unique(stations$year)){
-    # keep only bluefish dates in SST year
-    stationsyr <- stations %>%
-      filter(year == unique(btdf$year))
-    
-    # keep only modeled bt days in survey dataset
-    btdf_survdays <- btdf %>%
-      dplyr::mutate(numdate = as.numeric(date))%>%
-      dplyr::filter(numdate %in% unique(stationsyr$numdate)) %>%
-      dplyr::mutate(year = as.numeric(year),
-                    month = as.numeric(month),
-                    day = as.numeric(day),
-                    declon = longitude,
-                    declat = latitude) %>%
-      dplyr::select(-longitude, -latitude) %>%
-      sf::st_as_sf(coords=c("declon","declat"), crs=4326, remove=FALSE)
-    
-    # now join by nearest neighbor and date
-    
-    #https://stackoverflow.com/questions/71959927/spatial-join-two-data-frames-by-nearest-feature-and-date-in-r
-    
-    yrdietmodBT <- do.call('rbind', lapply(split(stationsyr, 1:nrow(stationsyr)), function(x) {
-      sf::st_join(x, btdf_survdays[btdf_survdays$numdate == unique(x$ numdate),],
-                  #join = st_nearest_feature
-                  join = st_nn, k = 1, progress = FALSE
+  yr <- get_year(df)
+  
+  # choose correct file location
+  btdf <- readRDS(
+    if (yr >= 1993 && yr <= 2024) {
+      file.path(v2_dir, df)
+    } else {
+      file.path(v1_dir, df)
+    }
+  )
+  
+  if (!yr %in% unique(stations$year)) next
+  
+  # keep only bluefish dates in SST year
+  stationsyr <- stations %>%
+    dplyr::filter(year == yr)
+  
+  if (nrow(stationsyr) == 0) next
+  
+  # keep only modeled bt days in survey dataset
+  btdf_survdays <- btdf %>%
+    dplyr::mutate(numdate = as.numeric(date)) %>%
+    dplyr::filter(numdate %in% stationsyr$numdate) %>%
+    dplyr::mutate(
+      year   = as.numeric(year),
+      month = as.numeric(month),
+      day   = as.numeric(day),
+      declon = longitude,
+      declat = latitude
+    ) %>%
+    dplyr::select(-longitude, -latitude) %>%
+    sf::st_as_sf(coords = c("declon", "declat"),
+                 crs = 4326, remove = FALSE)
+  
+  if (nrow(btdf_survdays) == 0) next
+  
+  yrdietmodBT <- do.call(
+    rbind,
+    lapply(split(stationsyr, seq_len(nrow(stationsyr))), function(x) {
+      
+      y <- btdf_survdays[btdf_survdays$numdate == unique(x$numdate), ]
+      if (nrow(y) == 0) return(NULL)
+      
+      sf::st_join(
+        x, y,
+        join = st_nn,
+        k = 1,
+        progress = FALSE
       )
-    }))
-    
-    #   #datatable solution--works but doesnt seem faster?
-    #    df1 <- data.table(stationsyr)
-    #
-    #  .nearest_samedate <- function(x) {
-    #    st_join(st_as_sf(x), sstdf_survdays[sstdf_survdays$yrmody == unique(x$yrmody),], join = st_nearest_feature)
-    #  }
-    # #
-    #  yrdietOISST <- df1[, .nearest_samedate(.SD), by = list(1:nrow(df1))]
-    
-    dietstn_mod_bt <- rbind(dietstn_mod_bt,  yrdietmodBT)
-  }
+    })
+  )
+  
+  dietstn_mod_bt <- rbind(dietstn_mod_bt, yrdietmodBT)
 }
+
+# old version below
+
+# for(df in BTdfs){
+#   btdf <- readRDS(paste0(here("benthos/data-raw/bottomtemp/bt_data/", df)))
+#   
+#   if(unique(btdf$year) %in% unique(stations$year)){
+#     # keep only bluefish dates in SST year
+#     stationsyr <- stations %>%
+#       filter(year == unique(btdf$year))
+#     
+#     # keep only modeled bt days in survey dataset
+#     btdf_survdays <- btdf %>%
+#       dplyr::mutate(numdate = as.numeric(date))%>%
+#       dplyr::filter(numdate %in% unique(stationsyr$numdate)) %>%
+#       dplyr::mutate(year = as.numeric(year),
+#                     month = as.numeric(month),
+#                     day = as.numeric(day),
+#                     declon = longitude,
+#                     declat = latitude) %>%
+#       dplyr::select(-longitude, -latitude) %>%
+#       sf::st_as_sf(coords=c("declon","declat"), crs=4326, remove=FALSE)
+#     
+#     # now join by nearest neighbor and date
+#     
+#     #https://stackoverflow.com/questions/71959927/spatial-join-two-data-frames-by-nearest-feature-and-date-in-r
+#     
+#     yrdietmodBT <- do.call('rbind', lapply(split(stationsyr, 1:nrow(stationsyr)), function(x) {
+#       sf::st_join(x, btdf_survdays[btdf_survdays$numdate == unique(x$ numdate),],
+#                   #join = st_nearest_feature
+#                   join = st_nn, k = 1, progress = FALSE
+#       )
+#     }))
+#     
+#     #   #datatable solution--works but doesnt seem faster?
+#     #    df1 <- data.table(stationsyr)
+#     #
+#     #  .nearest_samedate <- function(x) {
+#     #    st_join(st_as_sf(x), sstdf_survdays[sstdf_survdays$yrmody == unique(x$yrmody),], join = st_nearest_feature)
+#     #  }
+#     # #
+#     #  yrdietOISST <- df1[, .nearest_samedate(.SD), by = list(1:nrow(df1))]
+#     
+#     dietstn_mod_bt <- rbind(dietstn_mod_bt,  yrdietmodBT)
+#   }
+# }
 
 #saveRDS(dietstn_OISST, here("data-raw/dietstn_OISST.rds"))
 
