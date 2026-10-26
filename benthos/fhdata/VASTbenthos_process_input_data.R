@@ -29,11 +29,10 @@ paths <- list(
   dietoverlap = here::here("benthos/data-raw/tgmat.2022-02-15.csv"),  # predator diet overlap matrix
   sizedef     = here::here("benthos/data-raw/Table3.xlsx"),           # NEFSC FH size categories (Brian)
   prey        = here::here("benthos/data/prey.RData"),                # Rpath prey mappings, June 2023
-  glorys_dir  = "//nefscdata/EDAB_Datasets/GLORYS/V12/PRODUCTS/annual_bottomT_vast",
+  glorys_dir  = "//nefscdata/EDAB_Datasets/GLORYS/V12/PRODUCTS/annual_bottomT_vast/V3",  # Joe's Oct 2026 pull, one file per year
   out_dir     = here::here("benthos/fhdata")
 )
 
-glorys_v2_start <- 1993   # Joe's V2 files correct an error in 1993+; V1 used before that
 
 # Methods switches. Defaults reproduce the methods used for the 2026 SOE.
 filter_benthivores <- FALSE  # TRUE = keep only benthivore predators in NEFSC data (methods question, see issue)
@@ -201,6 +200,8 @@ agg <- list(macro = build_benthos_data("macro"),
             mega  = build_benthos_data("mega"))
 
 ## ---- Bottom temperature: nearest GLORYS cell on the survey date -----------
+# Source: Joe's V3 pull (Oct 2026), one file per year. Pre-1993 files are on a coarser
+# grid and use longitude/latitude; 1993+ use x/y (handled by the rename below).
 # Done once for all stations (macro and mega share stations), then joined to each.
 
 stations <- bind_rows(agg) |>
@@ -212,20 +213,19 @@ stations <- bind_rows(agg) |>
 
 if (anyDuplicated(stations$id)) stop("Station ids with conflicting location/date between macro and mega")
 
-bt_files <- tibble::tibble(
-  path = c(list.files(file.path(paths$glorys_dir, "V1"), "\\.rds$", full.names = TRUE),
-           list.files(file.path(paths$glorys_dir, "V2"), "\\.rds$", full.names = TRUE))) |>
-  mutate(version = basename(dirname(path)),
-         year    = as.numeric(sub(".*_(\\d{4})\\.rds$", "\\1", basename(path)))) |>
-  filter((version == "V1" & year <  glorys_v2_start) |
-           (version == "V2" & year >= glorys_v2_start),
-         year %in% stations$year)
+bt_files <- tibble::tibble(path = list.files(paths$glorys_dir, "\\.rds$", full.names = TRUE)) |>
+  mutate(year = as.numeric(sub(".*_(\\d{4})\\.rds$", "\\1", basename(path)))) |>
+  filter(year %in% stations$year)
 
-if (!data_year %in% bt_files$year) stop("No GLORYS bottom temp file for ", data_year)
+if (anyDuplicated(bt_files$year)) stop("More than one GLORYS file per year in ", paths$glorys_dir)
+
+missing_bt <- setdiff(unique(stations$year[stations$year >= 1980]), bt_files$year)
+if (length(missing_bt)) stop("No GLORYS bottom temp file for: ", paste(sort(missing_bt), collapse = ", "))
 
 match_bt_year <- function(path, yr) {
   stn_yr <- filter(stations, year == yr)
   bt <- readRDS(path) |>
+    dplyr::rename(any_of(c(longitude = "x", latitude = "y"))) |>
     mutate(numdate = as.numeric(date)) |>
     filter(numdate %in% stn_yr$numdate) |>
     sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
