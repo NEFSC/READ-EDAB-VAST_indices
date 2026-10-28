@@ -306,7 +306,7 @@ plt_index <- function(season) {
     "forage/2027/outputs/",
     season,
     "forageindex_",
-    Sys.Date(),
+    "2026-10-06",
     ".rds"
   ))
 
@@ -345,7 +345,7 @@ plt_cog <- function(season) {
     "forage/2027/outputs/",
     season,
     "foragecog_",
-    Sys.Date(),
+    "2026-10-06",
     ".rds"
   ))
 
