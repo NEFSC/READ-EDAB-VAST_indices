@@ -1,0 +1,70 @@
+
+Attaching package: 'dplyr'
+
+The following objects are masked from 'package:stats':
+
+    filter, lag
+
+The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union
+
+Loading required package: TMB
+Loading required package: units
+udunits database from C:/Users/maxwell.grezlik/AppData/Local/Programs/R/R-4.6.0/library/units/share/udunits/udunits2.xml
+Loading required package: marginaleffects
+###########################################################################################
+Loading package VAST version 4.0.0
+For information and examples, please see http://github.com/james-thorson/VAST/
+###########################################################################################
+Registered S3 methods overwritten by 'FishStatsUtils':
+  method                        from
+  get_coef.fit_model            VAST
+  get_predict.fit_model         VAST
+  get_vcov.fit_model            VAST
+  plot.fit_model                VAST
+  plot.make_extrapolation_info  VAST
+  plot.make_spatial_info        VAST
+  predict.fit_model             VAST
+  print.fit_model               VAST
+  print.make_extrapolation_info VAST
+  print.make_spatial_info       VAST
+  set_coef.fit_model            VAST
+  summary.fit_model             VAST
+
+=== megabenthos spring: 17746 stations, 1980-2025 | 2026-11-12 11:23:30 ===
+
+### Writing output from `fit_model` in directory: C:/Users/maxwell.grezlik/Documents/Rprojects/READ-EDAB-VAST_indices/benthos/pyindex/benthivores_only/megabenthos_spring_500_cov/
+
+### Making extrapolation-grid
+Using strata c(3440, 3430, 3420, 1610, 1620, 1630, 1640, 3390, 3400, 3410, 1650, 1660, 1670, 1680, 3360, 3370, 3380, 3330, 3340, 3350, 1720, 3310, 3320, 1700, 1710, 3300, 1690, 3270, 3280, 3290, 1750, 1740, 3240, 3250, 3260, 1730, 3230, 3220, 1040, 1030, 3180, 3190, 3200, 1020, 1010, 3150, 3160, 3170, 1080, 1070, 1060, 1120, 1110, 1100, 1150, 3120, 3130, 3140, 1140, 3110, 1130, 3100, 3080, 1050, 3090, 1090, 3070, 3060, 1190, 3050, 3460, 3520, 3550, 3030, 3040, 1180, 1170, 3020, 1160, 3010, 1250, 1230, 3450, 1200, 
+3540, 3480, 1240, 3470, 3510, 3530, 3920, 3500, 3560, 3570, 1220, 1210, 3580, 3590, 1280, 1290, 3600, 3610, 1260, 1270, 3630, 3620, 3640, 3650, 3660, 1310, 1300, 1320, 1370, 1400, 1360, 3680, 3670, 3690, 1340, 3700, 3710, 3720, 3908, 1380, 1330, 3730, 3740, 3750, 3780, 3770, 1390, 3760, 3810, 3800, 3790, 3830, 3820, 3850, 3840, 1351, 3870, 3860, 1352, 3900, 3890, 3880)c(3440, 3430, 3420, 1610, 1620, 1630, 1640, 3390, 3400, 3410, 1650, 1660, 1670, 1680, 3360, 3370, 3380, 3330, 3340, 3350, 1720, 3310, 3320, 1700, 1710, 3300, 1690, 3270, 3280, 3290, 1750, 1740, 3240, 3250, 3260, 1730, 3230, 3220, 1040, 1030, 3180, 3190, 3200, 1020, 1010, 3150, 3160, 3170, 1080, 1070, 1060, 1120, 1110, 1100, 3120, 3130, 3140, 3110, 3100, 3080, 1050, 3090, 3070, 3060, 3050, 3030, 3040, 3020, 3010, 3450, 3470, 3510, 3500)c(1150, 1140, 1130, 1090, 1190, 3460, 3520, 3550, 1180, 1170, 1160, 1250, 1230, 1200, 3540, 3480, 3530, 1210)c(1240, 3560, 3570, 1220, 3580, 3590, 1280, 1290, 3600, 3610, 1260, 1270, 3630, 3620, 3640, 3650, 3660, 1370, 1400, 1360, 3680, 3670, 3690, 3700, 3710, 3720, 1380, 3730, 3740, 3750, 3780, 3770, 1390, 3760, 3810, 3800, 3790, 3830, 3820)c(3920, 1310, 1300, 1320, 1340, 3908, 1330, 3850, 3840, 1351, 3870, 3860, 1352, 3900, 3890, 3880)
+For the UTM conversion, automatically detected zone 19.
+# Reducing extrapolation-grid from 31311 to 5000 cells for Region(s): northwest_atlantic
+Loaded from C:/Users/maxwell.grezlik/Documents/Rprojects/READ-EDAB-VAST_indices/benthos/pyindex/benthivores_only/megabenthos_spring_500_cov//Kmeans_extrapolation-5000.RData
+
+### Making spatial information
+Loaded from C:/Users/maxwell.grezlik/Documents/Rprojects/READ-EDAB-VAST_indices/benthos/pyindex/benthivores_only/megabenthos_spring_500_cov//Kmeans_knots-500.RData
+'as(<matrix>, "dgTMatrix")' is deprecated.
+Use 'as(as(as(., "dMatrix"), "generalMatrix"), "TsparseMatrix")' instead.
+See help("Deprecated") and help("Matrix-deprecated").
+
+### Making data object
+Coercing `a_i` to have units `km^2`; I recommend using explicit units, e.g., `as_units(a_i,'km^2')` or `as_units(a_i,unitless)`
+FieldConfig_input is:
+             Component_1 Component_2
+Omega                 -2          -2
+Epsilon               -2          -2
+Beta                  -2          -2
+Epsilon_time          -3          -3
+OverdispersionConfig_input is:
+eta1 eta2 
+  -1   -1 
+Calculating range shift for stratum #1:
+
+### Making TMB object
+using C++ compiler: 'G__~1.EXE (GCC) 14.3.0'
+make: Nothing to be done for 'all'.
+Error in MakeADFunObject(data, parameters, reportenv, ADreport = ADreport,  : 
+  Caught exception 'std::bad_alloc' in function 'MakeADFunObject'
+

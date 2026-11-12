@@ -1,0 +1,8 @@
+Error in "get_result(output = out, options)" : 
+  ! callr subprocess failed: could not start R, exited with non-zero status, has crashed or was killed
+Error in "get_result(output = out, options)" : 
+  ! callr subprocess failed: could not start R, exited with non-zero status, has crashed or was killed
+Error : ! in callr subprocess.
+Caused by error in `MakeADFunObject(data, parameters, reportenv, ADreport = ADreport, ...`:
+! Caught exception 'std::bad_alloc' in function 'MakeADFunObject'
+

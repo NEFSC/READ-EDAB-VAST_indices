@@ -35,7 +35,13 @@ paths <- list(
 
 
 # Methods switches. Defaults reproduce the methods used for the 2026 SOE.
-filter_benthivores <- FALSE  # TRUE = keep only benthivore predators in NEFSC data (methods question, see issue)
+# Can be set before sourcing, e.g. filter_benthivores <- TRUE; source(<this file>)
+# TRUE = keep only benthivore predators in NEFSC data, as specified in the
+#        workflow decisions doc (Gaichas & Lucey 2024) but never applied in the code
+if (!exists("filter_benthivores")) filter_benthivores <- FALSE
+variant <- if (filter_benthivores) "benthivores_only" else ""   # filtered version gets its own subfolder
+paths$out_dir <- file.path(paths$out_dir, variant)
+dir.create(paths$out_dir, showWarnings = FALSE, recursive = TRUE)
 
 missing <- unlist(paths[c("allfh", "neamap_dates", "neamap", "dietoverlap", "sizedef", "prey")])
 missing <- missing[!file.exists(missing)]

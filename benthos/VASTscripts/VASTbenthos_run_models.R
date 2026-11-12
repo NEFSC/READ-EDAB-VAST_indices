@@ -31,8 +31,15 @@ n_knots    <- 500
 # Can also be set before sourcing: test_mode <- TRUE; source(<this file>)
 if (!exists("test_mode")) test_mode <- FALSE
 
-in_dir  <- here::here("benthos/fhdata")
-out_dir <- here::here("benthos/pyindex")
+# "" = current version; "benthivores_only" = predator-filter version (inputs from benthos/fhdata/benthivores_only)
+if (!exists("variant")) variant <- ""
+in_dir  <- file.path(here::here("benthos/fhdata"),  variant)
+out_dir <- file.path(here::here("benthos/pyindex"), variant)
+
+# TRUE = center catchability covariates at their mean (index is then predicted at average
+# predator length / number of species / bottom temp instead of 0). Same likelihood, better
+# convergence; rescales the index by a constant only. Can be set before sourcing.
+if (!exists("center_covariates")) center_covariates <- FALSE
 
 ## ---- Data prep (identical to the legacy scripts) ---------------------------
 
@@ -52,6 +59,8 @@ prep_vast_data <- function(group, season) {
            mod_bt,   # legacy: keeping mod_bt here drops stations with in situ BT but no GLORYS match
            btfill) |>  #   (methods question in the 2027 issue; kept for consistency with 2026 SOE)
     na.omit() |>
+    mutate(across(c(meanbenthivorelen, nbenthivoresp, btfill),
+                  \(x) if (center_covariates) x - mean(x) else x)) |>
     as.data.frame()
 }
 
@@ -149,7 +158,9 @@ run_benthos_vast <- function(group, season) {
                    a_i   = rep(1, nrow(dat)),
                    v_i   = dat$Vessel,
                    Q_ik  = as.matrix(dat[, c("meanbenthivorelen", "nbenthivoresp", "btfill")]),
-                   working_dir = wd)
+                   working_dir = wd,
+                   newtonsteps = 3,                                        # fit_model argument: Newton steps after the 2nd optimizer run
+                   control     = list(eval.max = 600, iter.max = 300, trace = 1))  # caps only the 2nd run, which starts at the 1st run's optimum)
   
   saveRDS(fit, file.path(working_dir, "fit.rds"))   # saved before the check so a failed fit can be inspected
   check_vast_fit(fit, working_dir)
@@ -186,18 +197,14 @@ for (i in seq_len(nrow(vast_jobs))) {
 # Each model runs in its own background R process with its own log file.
 # Check RAM (Task Manager) after starting the first one; each fit can use several GB.
 #
-# launch <- function(group, season) {
-#   log <- here::here("benthos/pyindex", paste0(group, "_", season, ".log"))
-#   callr::r_bg(function(g, s, script) {
+# launch <- function(group, season, variant = "") {
+#   log <- here::here("benthos/pyindex", paste0(group, "_", season, if (nzchar(variant)) paste0("_", variant), ".log"))
+#   callr::r_bg(function(g, s, v, script) {
 #                 vast_jobs <- data.frame(group = g, season = s)
+#                 variant <- v
 #                 source(script, local = TRUE)
 #               },
-#               args   = list(g = group, s = season,
+#               args   = list(g = group, s = season, v = variant,
 #                             script = here::here("benthos/VASTscripts/VASTbenthos_run_models.R")),
 #               stdout = log, stderr = "2>&1", wd = here::here())
 # }
-# jobs <- list(macro_fall   = launch("macro", "fall"),
-#              macro_spring = launch("macro", "spring"),
-#              mega_fall    = launch("mega",  "fall"),
-#              mega_spring  = launch("mega",  "spring"))
-# sapply(jobs, \(p) p$is_alive())   # check status any time
