@@ -35,18 +35,18 @@ VignetteBuilder: knitr
 RemoteType: github
 RemoteHost: api.github.com
 RemoteRepo: VAST
-RemoteUsername: James-Thorson-NOAA
-RemoteRef: HEAD
-RemoteSha: a8dca4cd6d6fd2ae37d00fa12c60f2e962c8673e
+RemoteUsername: james-thorson
+RemoteRef: main
+RemoteSha: f499e499afb5cf56655eb66abd47e6d6914d27de
 GithubRepo: VAST
-GithubUsername: James-Thorson-NOAA
-GithubRef: HEAD
-GithubSHA1: a8dca4cd6d6fd2ae37d00fa12c60f2e962c8673e
+GithubUsername: james-thorson
+GithubRef: main
+GithubSHA1: f499e499afb5cf56655eb66abd47e6d6914d27de
 NeedsCompilation: no
-Packaged: 2025-02-20 16:20:42 UTC; maxwell.grezlik
+Packaged: 2025-12-03 21:06:20 UTC; Max
 Author: James Thorson [aut, cre]
         (<https://orcid.org/0000-0001-7415-1010>), Cole Monnahan [ctb]
 Maintainer: James Thorson <James.Thorson@noaa.gov>
-Built: R 4.4.2; ; 2025-02-20 16:21:06 UTC; windows
+Built: R 4.3.3; ; 2025-12-03 21:06:26 UTC; windows
 
--- File: C:/Users/maxwell.grezlik/AppData/Local/Programs/R/R-4.6.0/library/VAST/Meta/package.rds 
+-- File: C:/Users/Max/AppData/Local/R/win-library/4.3/VAST/Meta/package.rds 
